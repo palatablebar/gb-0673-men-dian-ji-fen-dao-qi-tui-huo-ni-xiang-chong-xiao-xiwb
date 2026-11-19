@@ -4,6 +4,7 @@ from app.reasons import reject
 
 def replay(rows,lots,as_of):
     live={r['id']:dict(r,remaining=0) for r in lots};spends={};refunds=[];ledger=[];errors=[];expired=0
+    processed_refunds=set()
     priority={'EARN':0,'SPEND':1,'REFUND':2}
     def expire(at):
         nonlocal expired
@@ -25,6 +26,8 @@ def replay(rows,lots,as_of):
                 if rest==0:break
             spends[row['id']]={'id':row['id'],'member':member,'points':amount,'refunded':0,'allocations':allocations,'at':row['at']}
             ledger.append({'id':row['id'],'member':member,'action':'SPEND','points':amount,'at':row['at']});continue
+        if row['id'] in processed_refunds:
+            errors.append((row,'REFUND_DUPLICATE','退款重试已处理，不重复恢复积分'));continue
         original=spends.get(row['ref'])
         if original is None or original['member']!=member:errors.append((row,'REFUND_REFERENCE','退款未关联同会员有效消费'));continue
         if amount>original['points']-original['refunded']:errors.append((row,'REFUND_CAP','累计退款超过原消费'));continue
@@ -38,8 +41,8 @@ def replay(rows,lots,as_of):
             else:lot['remaining']+=count;restored+=count
             allocations.append({'lot':lot['id'],'points':count,'expired':is_expired})
             if not rest:break
-        original['refunded']+=amount
-        refunds.append({'id':row['id'],'member':member,'ref':row['ref'],'points':amount,'restored':restored,'expired_refund':expired_refund,'allocations':allocations,'line':row['_line']})
+        original['refunded']+=amount;processed_refunds.add(row['id'])
+        refunds.append({'id':row['id'],'member':member,'ref':row['ref'],'points':amount,'restored':restored,'expired_refund':expired_refund,'allocations':allocations,'at':row['at'],'line':row['_line']})
         ledger.append({'id':row['id'],'member':member,'action':'REFUND','points':restored,'at':row['at']})
     expire(instant(as_of))
     return {'lots':list(live.values()),'spends':list(spends.values()),'refunds':refunds,'ledger':ledger,'errors':errors,'expired':expired}

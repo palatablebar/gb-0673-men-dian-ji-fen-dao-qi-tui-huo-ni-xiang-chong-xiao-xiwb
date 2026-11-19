@@ -1,1 +1,48 @@
-{% extends 'base.html' %}{% block content %}<section class="panel primary-panel"><div class="panel__head"><h2>退货回拨</h2><span>{{ view.rows|length }} 行</span></div><div class="column-letters"><span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>H</span></div>{{ cells(view.rows) }}</section><div class="grid"><section class="panel"><div class="panel__head"><h2>会员余额</h2><span>{{ state.archive.members }} 户</span></div><div class="balance-grid">{% for row in state.archive.balances %}<div class="member-cell"><small>{{ row.member }}</small><b>{{ row.remaining }}</b></div>{% endfor %}</div></section><section class="panel"><div class="panel__head"><h2>失败事件</h2><span>{{ state.quarantine|length }} 行</span></div>{{ cells(state.quarantine) }}</section></div>{% endblock %}
+{% extends 'base.html' %}{% block content %}
+<section class="panel primary-panel">
+  <div class="panel__head"><h2>退货回拨</h2><span>{{ view.rows|length }} 笔退货 · {{ view.metrics['回拨明细行'] }} 条批次去向</span></div>
+  <div class="publish-bar">
+    <div class="publish-state">
+      <label>发布状态</label>
+      {% if state.publication and state.publication.run_id==state.manifest.run_id %}
+        <b class="badge badge--on">已发布</b>
+        <span class="publish-meta">版本 r{{ state.publication.revision }} · {{ state.publication.published_at }}</span>
+      {% elif state.publication %}
+        <b class="badge badge--other">另批已发布</b>
+        <span class="publish-meta">当前发布：{{ state.publication.run_id }} r{{ state.publication.revision }}</span>
+      {% else %}
+        <b class="badge badge--off">未发布</b>
+        <span class="publish-meta">仅复核通过且守恒的批次可发布</span>
+      {% endif %}
+    </div>
+    <div class="publish-actions">
+      <button id="publish-btn" type="button" data-revision="{{ state.revision|default(1) }}">发布退货回拨结果</button>
+      <button id="withdraw-btn" type="button" class="ghost">撤回发布</button>
+      <output id="publish-result" aria-live="polite"></output>
+    </div>
+  </div>
+  <div class="kpis kpis--inline">
+    <div class="kpi">退款笔数<strong>{{ view.metrics['退款笔'] }}</strong></div>
+    <div class="kpi">恢复积分<strong>{{ view.metrics['恢复积分'] }}</strong></div>
+    <div class="kpi">过期损失<strong>{{ view.metrics['过期不恢复'] }}</strong></div>
+    <div class="kpi">批次轨迹<strong>{{ view.metrics['批次轨迹'] }}</strong></div>
+  </div>
+  <div class="column-letters"><span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>H</span></div>
+  {{ cells(view.rows) }}
+</section>
+<section class="panel">
+  <div class="panel__head"><h2>回拨批次去向（逐笔 × 逐批次）</h2><span>{{ view.trail|length }} 行</span></div>
+  {{ cells(view.trail) }}
+</section>
+<div class="grid">
+  <section class="panel">
+    <div class="panel__head"><h2>批次余额轨迹</h2><span>{{ view.lots|length }} 批 · 剩余可用可对账</span></div>
+    {{ cells(view.lots) }}
+  </section>
+  <section class="panel">
+    <div class="panel__head"><h2>会员余额</h2><span>{{ state.archive.members }} 户</span></div>
+    <div class="balance-grid">{% for row in state.archive.balances %}<div class="member-cell"><small>{{ row.member }}</small><b>{{ row.remaining }}</b></div>{% endfor %}</div>
+  </section>
+</div>
+<section class="panel"><div class="panel__head"><h2>失败事件（含重复退款隔离）</h2><span>{{ state.quarantine|length }} 行</span></div>{{ cells(state.quarantine) }}</section>
+{% endblock %}

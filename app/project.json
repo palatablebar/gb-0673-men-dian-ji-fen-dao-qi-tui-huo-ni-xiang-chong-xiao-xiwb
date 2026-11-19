@@ -58,6 +58,16 @@
     "refunded": "退款",
     "expired": "到期",
     "points_balanced": "积分守恒",
-    "allocations": "回拨批次"
+    "allocations": "回拨批次",
+    "spend_points": "原消费积分",
+    "cumulative_refunded": "累计已退",
+    "refund_id": "退货号",
+    "lot": "批次",
+    "status": "去向",
+    "consumed": "累计消费",
+    "restored_refund": "退货恢复",
+    "expired_refund": "过期不恢复",
+    "natural_expired": "自然到期",
+    "balanced": "批次守恒"
   }
 }

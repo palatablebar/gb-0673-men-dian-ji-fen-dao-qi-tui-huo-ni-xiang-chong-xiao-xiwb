@@ -29,6 +29,10 @@
 | TRAP-11 | UTC归一 | 静默错算或证据丢失 | 以可复核规则显式处理 | `app/modules/policy/rules.py` | `tests/test_policy.py::test_utc_real` |
 | TRAP-06 | 全角积分 | 静默错算或证据丢失 | 以可复核规则显式处理 | `app/modules/policy/rules.py` | `tests/test_policy.py::test_fullwidth_points` |
 | TRAP-23 | 权益半开窗 | 静默错算或证据丢失 | 以可复核规则显式处理 | `app/modules/policy/rules.py` | `tests/test_policy.py::test_rule_end_exclusive` |
+| TRAP-31 | 乱序多笔部分退货 | 按提交顺序回拨导致余额随顺序变化 | 按事件时刻+类型+编号确定性重放，累计锚定原消费 | `app/modules/consumption/rules.py` | `tests/test_refund_publish.py::test_out_of_order_partial_refunds_invariant` |
+| TRAP-32 | 退货重试重复恢复 | 重试再回拨一次，积分翻倍 | 回放层 REFUND_DUPLICATE 幂等护栏，采信层同值去重 | `app/modules/consumption/rules.py` | `tests/test_refund_publish.py::test_duplicate_refund_replay_is_idempotent` |
+| TRAP-33 | 跨批次到期退货 | 过期批次被复活或去向无法解释 | 逆序回拨逐批判定到期，过期只记损失；refund_trail/lot_trail 逐行追溯 | `app/modules/refund/rules.py` | `tests/test_refund_publish.py::test_refund_across_lot_expiry_split` |
+| TRAP-34 | 发布失败覆盖旧版 | 未平账结果替换已发布版本 | publications 单例原子 UPSERT，422/409 失败保留旧版，原始 runs 不改写 | `app/store.py` | `tests/test_refund_publish.py::test_publish_failure_preserves_previous_version` |
 
 ## 对账规则
 

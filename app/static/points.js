@@ -6,3 +6,30 @@ if(filePicker){
  document.querySelector('#import-csv').addEventListener('click',async event=>{event.target.disabled=true;try{const response=await fetch('/api/runs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csv_text:editor.value})});const data=await response.json();if(!response.ok)throw Error(data.detail);location.href=location.pathname+'?run_id='+data.manifest.run_id;}catch(e){editor.setCustomValidity(e.message);editor.reportValidity();}finally{event.target.disabled=false;}});
  editor.addEventListener('input',()=>editor.setCustomValidity(''));
 }
+const publishBtn=document.querySelector('#publish-btn');
+if(publishBtn){
+ const publishOutput=document.querySelector('#publish-result');
+ const runId=document.body.dataset.runId;
+ publishBtn.addEventListener('click',async()=>{
+  publishBtn.disabled=true;publishOutput.textContent='发布中…';
+  try{
+   const response=await fetch('/api/runs/'+runId+'/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:Number(publishBtn.dataset.revision)})});
+   const data=await response.json();
+   if(!response.ok)throw Error(data.detail);
+   publishOutput.textContent=data.replayed===false?'已发布（幂等重试，未重复恢复）':'发布成功：'+data.run_id+' r'+data.revision;
+   location.reload();
+  }catch(e){publishOutput.textContent='发布失败，旧版结果保留：'+e.message;}
+  finally{publishBtn.disabled=false;}
+ });
+ const withdrawBtn=document.querySelector('#withdraw-btn');
+ withdrawBtn.addEventListener('click',async()=>{
+  withdrawBtn.disabled=true;publishOutput.textContent='撤回中…';
+  try{
+   const response=await fetch('/api/runs/'+runId+'/publish',{method:'DELETE'});
+   const data=await response.json();
+   if(!response.ok)throw Error(data.detail);
+   location.reload();
+  }catch(e){publishOutput.textContent=e.message;}
+  finally{withdrawBtn.disabled=false;}
+ });
+}

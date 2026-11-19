@@ -13,6 +13,10 @@ docker compose exec -T app pytest -q
 
 各模块页面对应 `/<模块英文名>`，各模块执行入口为 `POST /api/<模块英文名>`，不传参即可独立演示。完整运行 `POST /api/runs` 支持 `dataset`（dirty/clean/legacy）、`csv_text` 与 `overrides` 参数。批次历史 `GET /api/runs`，详情 `GET /api/runs/{run_id}`。
 
+退货回拨在原审计之外提供两层可追溯轨迹：回拨批次去向（每笔退货×每个原批次的恢复/过期损失，含到期时刻与原始行号）和批次余额轨迹（每批发放在累计消费、退货恢复、过期退款、自然到期后的剩余可用，逐批守恒校验）。同一退货事件编号重复提交在回放层以 `REFUND_DUPLICATE` 隔离，不重复恢复积分。多次部分退货按事件时刻确定性重放，累计退款锚定原消费、永不超出，最终余额与退货先后顺序无关。
+
+发布入口 `POST /api/runs/{run_id}/publish`（提交当前 `revision`）：仅行守恒、积分守恒且退货审计无异常的批次可发布；陈旧版本 409、未平账 422，失败时已发布旧版整行保留，原始消费记录与输入快照永不改写。同一结果重试发布幂等返回（`replayed=false`），不产生第二条发布。当前发布 `GET /api/publication`，撤回 `DELETE /api/runs/{run_id}/publish`。退货页同屏显示回拨表、批次轨迹、会员余额与发布状态；归档包含 `refund_trail.json` 证据。
+
 同输入与规则版本生成相同批号，只保留一条批次。复核入口 `POST /api/runs/{run_id}/review` 提交当前 `revision`，陈旧提交409。归档包只有一个下载入口 `GET /api/export/{run_id}`，含证据和运行摘要。原始隔离在页面同屏显示。
 
 SQLite使用命名卷，容器重启后保留历史。要重建演示可在Compose中改用新的卷名称，保留旧卷。
